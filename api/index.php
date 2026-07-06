@@ -1,13 +1,5 @@
 <?php
 
-/**
- * ============================================================================
- * Wrapper API Script
- * Developer: @ComRed2786
- * Telegram: https://t.me/ComRed2786
- * ============================================================================
- */
-
 // 1. Set headers to output JSON and allow Cross-Origin Requests (CORS)
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
@@ -23,11 +15,11 @@ $number = isset($_GET['number']) ? trim($_GET['number']) : '';
 if (empty($number)) {
     http_response_code(400); // Bad Request
     echo json_encode([
-        "developer" => "@ComRed2786",
-        "telegram"  => "https://t.me/ComRed2786",
         "status"    => "error",
-        "message"   => "Missing 'number' parameter. Example usage: ?number=9876543210"
-    ]);
+        "message"   => "Missing 'number' parameter. Example usage: ?number=9876543210",
+        "developer" => "@ComRed2786",
+        "telegram"  => "https://t.me/ComRed2786"
+    ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
     exit;
 }
 
@@ -46,20 +38,21 @@ curl_setopt($ch, CURLOPT_HTTPGET, true);
 $response = curl_exec($ch);
 $curlError = curl_error($ch);
 $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-curl_close($ch);
+
+// Note: curl_close() is removed here to prevent the PHP 8.5 deprecation warning.
+// PHP automatically cleans up the cURL resource.
 
 // 8. Handle cURL and HTTP errors
 if ($response === false || $httpCode >= 400) {
     http_response_code($httpCode > 0 ? $httpCode : 500);
     echo json_encode([
-        "developer"   => "@ComRed2786",
-        "telegram"    => "https://t.me/ComRed2786",
         "status"      => "error",
         "message"     => "Failed to fetch data from the upstream API.",
         "http_code"   => $httpCode,
         "curl_error"  => $curlError,
-        "request_url" => $targetUrl
-    ]);
+        "developer"   => "@ComRed2786",
+        "telegram"    => "https://t.me/ComRed2786"
+    ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
     exit;
 }
 
@@ -71,13 +64,12 @@ if (json_last_error() !== JSON_ERROR_NONE) {
     $decodedData = $response; // Return raw string if not JSON
 }
 
-// 10. Output the final JSON response
+// 10. Output the final JSON response (Credits in footer)
 echo json_encode([
-    "developer"   => "@ComRed2786",
-    "telegram"    => "https://t.me/ComRed2786",
     "status"      => "success",
-    "request_url" => $targetUrl,
-    "data"        => $decodedData
+    "data"        => $decodedData,
+    "developer"   => "@ComRed2786",
+    "telegram"    => "https://t.me/ComRed2786"
 ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
 
 ?>
