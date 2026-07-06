@@ -2,83 +2,82 @@
 
 /**
  * ============================================================================
- * API Search Script
+ * Wrapper API Script
  * Developer: @ComRed2786
  * Telegram: https://t.me/ComRed2786
  * ============================================================================
  */
 
-/**
- * Fetches data from the Search API for a specific number.
- *
- * @param string|int $number The number to search for.
- * @return array|null Returns the decoded JSON response as an array, or null on failure.
- */
-function fetchNumberData($number) {
-    // 1. Define your API credentials and base URL
-    $secretKey = 'mysecretkey123';
-    
-    // 2. Safely construct the URL
-    $url = 'https://movements-invoice-amanda-victoria.trycloudflare.com/search/number' . 
-           '?number=' . urlencode($number) . 
-           '&key=' . urlencode($secretKey);
+// 1. Set headers to output JSON and allow Cross-Origin Requests (CORS)
+header('Content-Type: application/json');
+header('Access-Control-Allow-Origin: *');
 
-    // Show the example URL to the user for reference
-    echo "<p><strong>Requesting URL:</strong> <a href=\"{$url}\" target=\"_blank\">{$url}</a></p>";
+// 2. Define API credentials and Base URL
+$secretKey = 'mysecretkey123';
+$baseUrl = 'https://movements-invoice-amanda-victoria.trycloudflare.com/search/number';
 
-    // 3. Initialize the cURL session
-    $ch = curl_init();
+// 3. Get the 'number' parameter from the incoming GET request
+$number = isset($_GET['number']) ? trim($_GET['number']) : '';
 
-    // 4. Set cURL options
-    curl_setopt($ch, CURLOPT_URL, $url);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true); 
-    curl_setopt($ch, CURLOPT_TIMEOUT, 10);          
-    curl_setopt($ch, CURLOPT_HTTPGET, true);        
-    // curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false); // Uncomment if you get SSL certificate errors
-
-    // 5. Execute the request
-    $response = curl_exec($ch);
-
-    // 6. Handle potential cURL errors
-    if (curl_errno($ch)) {
-        echo "<strong>cURL Error:</strong> " . curl_error($ch) . "<br>";
-        curl_close($ch);
-        return null;
-    }
-
-    // 7. Get the HTTP status code
-    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    curl_close($ch);
-
-    if ($httpCode >= 400) {
-        echo "<strong>API Error:</strong> The server responded with a status code of {$httpCode}.<br>";
-        return null;
-    }
-
-    // 8. Decode and return the JSON response
-    return json_decode($response, true);
+// 4. Validate input
+if (empty($number)) {
+    http_response_code(400); // Bad Request
+    echo json_encode([
+        "developer" => "@ComRed2786",
+        "telegram"  => "https://t.me/ComRed2786",
+        "status"    => "error",
+        "message"   => "Missing 'number' parameter. Example usage: ?number=9876543210"
+    ]);
+    exit;
 }
 
-// ==========================================
-// Usage Example
-// ==========================================
+// 5. Safely construct the target API URL
+$targetUrl = $baseUrl . '?number=' . urlencode($number) . '&key=' . urlencode($secretKey);
 
-// The number you want to look up
-$searchQuery = "9876543210"; 
+// 6. Initialize cURL
+$ch = curl_init();
+curl_setopt($ch, CURLOPT_URL, $targetUrl);
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+curl_setopt($ch, CURLOPT_HTTPGET, true);
+// curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false); // Uncomment if facing SSL issues
 
-echo "<h2>API Test for Number: {$searchQuery}</h2>";
+// 7. Execute the request
+$response = curl_exec($ch);
+$curlError = curl_error($ch);
+$httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+curl_close($ch);
 
-// Call the function
-$apiData = fetchNumberData($searchQuery);
-
-// Output the results
-if ($apiData !== null) {
-    echo "<h3>API Response:</h3>";
-    echo "<pre style='background: #f4f4f4; padding: 10px; border-radius: 5px;'>";
-    print_r($apiData);
-    echo "</pre>";
-} else {
-    echo "<p style='color: red;'>Failed to retrieve data from the API.</p>";
+// 8. Handle cURL and HTTP errors
+if ($response === false || $httpCode >= 400) {
+    http_response_code($httpCode > 0 ? $httpCode : 500);
+    echo json_encode([
+        "developer"   => "@ComRed2786",
+        "telegram"    => "https://t.me/ComRed2786",
+        "status"      => "error",
+        "message"     => "Failed to fetch data from the upstream API.",
+        "http_code"   => $httpCode,
+        "curl_error"  => $curlError,
+        "request_url" => $targetUrl
+    ]);
+    exit;
 }
+
+// 9. Decode the response from the target API
+$decodedData = json_decode($response, true);
+
+// Fallback if the target API doesn't return valid JSON
+if (json_last_error() !== JSON_ERROR_NONE) {
+    $decodedData = $response; // Return raw string if not JSON
+}
+
+// 10. Output the final JSON response
+echo json_encode([
+    "developer"   => "@ComRed2786",
+    "telegram"    => "https://t.me/ComRed2786",
+    "status"      => "success",
+    "request_url" => $targetUrl,
+    "data"        => $decodedData
+], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
 
 ?>
